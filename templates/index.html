@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}}</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+</head>
+<body>
+    <!-- 顶部区域 -->
+    <header class="header">
+        <div class="container">
+            <h1 class="site-title">{{.Title}}</h1>
+            <p class="site-subtitle">实时监控服务状态</p>
+        </div>
+    </header>
+
+    <!-- 中间内容区域 -->
+    <main class="main">
+        <div class="container">
+            <!-- 整体状态概览 -->
+            <div class="status-overview">
+                <div class="status-indicator">
+                    <span class="status-dot status-online"></span>
+                    <span class="status-text">所有系统正常运行</span>
+                </div>
+                <div class="last-updated">
+                    最后更新: {{.LastUpdated}}
+                </div>
+            </div>
+
+            <!-- 服务状态列表 -->
+            <div class="services-section">
+                <h2 class="section-title">服务状态</h2>
+                <div class="services-grid">
+                    {{range .Services}}
+                    <div class="service-card">
+                        <div class="service-header">
+                            <div class="service-info">
+                                <h3 class="service-name">{{.Name}}</h3>
+                                <p class="service-description">{{.Description}}</p>
+                            </div>
+                            <div class="service-status">
+                                {{if eq .Status.String "online"}}
+                                    <span class="status-dot status-online" title="在线"></span>
+                                    <span class="status-label status-online-text">正常</span>
+                                {{else}}
+                                    <span class="status-dot status-offline" title="离线"></span>
+                                    <span class="status-label status-offline-text">异常</span>
+                                {{end}}
+                            </div>
+                        </div>
+                        <div class="service-details">
+                            <div class="service-url">
+                                <span class="url-label">地址:</span>
+                                <span class="url-value">{{.URL}}</span>
+                            </div>
+                            <div class="service-last-check">
+                                <span class="check-label">检查时间:</span>
+                                <span class="check-value">{{.LastChecked.Format "15:04:05"}}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {{end}}
+                </div>
+            </div>
+
+            <!-- 刷新按钮 -->
+            <div class="refresh-section">
+                <button class="refresh-btn" onclick="refreshStatus()">刷新状态</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- 底部区域 -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-links">
+                    <a href="https://github.com/JJApplication" target="_blank" class="footer-link">关于我们</a>
+                    <a href="https://github.com/JJApplication/Status" target="_blank" class="footer-link">源码链接</a>
+                    <a href="https://renj.io" class="footer-link" target="_blank">联系我们</a>
+                </div>
+                <div class="footer-info">
+                    <p>&copy; 2025 JJApps. 保留所有权利.</p>
+                    <p>由 <a href="https://github.com/gin-gonic/gin" target="_blank" class="footer-link">Gin</a> 强力驱动</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 更新服务状态显示
+        function updateServiceStatus(services) {
+            const servicesGrid = document.querySelector('.services-grid');
+            if (!servicesGrid) return;
+            
+            // 清空现有内容
+            servicesGrid.innerHTML = '';
+            
+            // 重新生成服务卡片
+            services.forEach(service => {
+                const serviceCard = document.createElement('div');
+                serviceCard.className = 'service-card';
+                
+                const statusClass = service.status === 1 ? 'status-online' : 'status-offline';
+                const statusText = service.status === 1 ? '正常' : '异常';
+                const statusTitle = service.status === 1 ? '在线' : '离线';
+                
+                serviceCard.innerHTML = `
+                    <div class="service-header">
+                        <div class="service-info">
+                            <h3 class="service-name">${service.name}</h3>
+                            <p class="service-description">${service.description}</p>
+                        </div>
+                        <div class="service-status">
+                            <span class="status-dot ${statusClass}" title="${statusTitle}"></span>
+                            <span class="status-label ${statusClass}-text">${statusText}</span>
+                        </div>
+                    </div>
+                    <div class="service-details">
+                        <div class="service-url">
+                            <span class="url-label">服务地址:</span>
+                            <span class="url-value"><a href="https://${service.url}" target="_blank">${service.url}</a></span>
+                        </div>
+                    </div>
+                `;
+                
+                servicesGrid.appendChild(serviceCard);
+            });
+        }
+        
+        // 更新整体状态概览
+        function updateOverallStatus(services) {
+            const statusIndicator = document.querySelector('.status-indicator');
+            const statusDot = statusIndicator.querySelector('.status-dot');
+            const statusText = statusIndicator.querySelector('.status-text');
+            
+            // 检查是否所有服务都在线
+             const allOnline = services.every(service => service.status === 1);
+            
+            if (allOnline) {
+                statusDot.className = 'status-dot status-online';
+                statusText.textContent = '所有系统正常运行';
+            } else {
+                statusDot.className = 'status-dot status-offline';
+                statusText.textContent = '部分系统异常';
+            }
+        }
+        
+        // 获取状态数据
+        function fetchStatus() {
+            fetch('/api/status')
+                .then(response => response.json())
+                .then(data => {
+                    // 更新最后更新时间
+                    const lastUpdatedElement = document.querySelector('.last-updated');
+                    if (lastUpdatedElement) {
+                        lastUpdatedElement.textContent = '最后更新: ' + data.last_updated;
+                    }
+                    
+                    // 更新服务状态
+                    updateServiceStatus(data.services);
+                    
+                    // 更新整体状态
+                    updateOverallStatus(data.services);
+                    
+                    console.log('状态已更新:', data);
+                })
+                .catch(error => {
+                    console.error('更新状态失败:', error);
+                    const lastUpdatedElement = document.querySelector('.last-updated');
+                    if (lastUpdatedElement) {
+                        lastUpdatedElement.textContent = '最后更新: 获取失败';
+                    }
+                });
+        }
+        
+        // 刷新状态功能
+        function refreshStatus() {
+            const refreshBtn = document.querySelector('.refresh-btn');
+            refreshBtn.textContent = '刷新中...';
+            refreshBtn.disabled = true;
+            
+            fetchStatus();
+            
+            setTimeout(() => {
+                refreshBtn.textContent = '刷新状态';
+                refreshBtn.disabled = false;
+            }, 1000);
+        }
+        
+        // 页面加载完成后立即获取状态
+        document.addEventListener('DOMContentLoaded', function() {
+            // 延迟500ms后获取状态，让页面先渲染
+            setTimeout(fetchStatus, 500);
+        });
+        
+        // 自动刷新功能（每30秒）
+        setInterval(fetchStatus, 30000);
+    </script>
+</body>
+</html>
