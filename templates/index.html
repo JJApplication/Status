@@ -42,7 +42,7 @@
                                 <p class="service-description">{{.Description}}</p>
                             </div>
                             <div class="service-status">
-                                {{if eq .Status.String "online"}}
+                                {{if eq .Status 0}}
                                     <span class="status-dot status-online" title="在线"></span>
                                     <span class="status-label status-online-text">正常</span>
                                 {{else}}
@@ -104,9 +104,9 @@
                 const serviceCard = document.createElement('div');
                 serviceCard.className = 'service-card';
                 
-                const statusClass = service.status === 1 ? 'status-online' : 'status-offline';
-                const statusText = service.status === 1 ? '正常' : '异常';
-                const statusTitle = service.status === 1 ? '在线' : '离线';
+                const statusClass = service.status === 0 ? 'status-online' : 'status-offline';
+                const statusText = service.status === 0 ? '正常' : '异常';
+                const statusTitle = service.status === 0 ? '在线' : '离线';
                 
                 serviceCard.innerHTML = `
                     <div class="service-header">
