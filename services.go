@@ -157,7 +157,9 @@ type ServiceManager struct {
 // NewServiceManager 创建新的服务管理器
 func NewServiceManager() *ServiceManager {
 	return &ServiceManager{
-		services: make([]*Service, 0),
+		lock:        new(sync.RWMutex),
+		refreshFlag: false,
+		services:    make([]*Service, 0),
 	}
 }
 

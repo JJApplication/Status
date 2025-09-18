@@ -138,7 +138,7 @@
             const statusText = statusIndicator.querySelector('.status-text');
             
             // 检查是否所有服务都在线
-             const allOnline = services.every(service => service.status === 1);
+             const allOnline = services.every(service => service.status === 0);
             
             if (allOnline) {
                 statusDot.className = 'status-dot status-online';
