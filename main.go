@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -66,7 +68,7 @@ func initServices() {
 		URL:         "https://pkg.renj.io",
 		Status:      StatusOnline,
 		Checker: &CmdChecker{
-			ProcessName: "blackhole",
+			ProcessName: "black-hole",
 			Timeout:     5 * time.Second,
 		},
 	})
@@ -129,7 +131,7 @@ func main() {
 
 	// 创建Gin引擎
 	r := gin.Default()
-
+	gin.SetMode(gin.ReleaseMode)
 	// 加载HTML模板
 	r.LoadHTMLGlob("templates/*")
 
@@ -140,6 +142,10 @@ func main() {
 	r.GET("/", indexHandler)
 	r.GET("/api/status", apiStatusHandler)
 
+	port := os.Getenv("PORTS")
+	if port == "" {
+		return
+	}
 	// 启动服务器
-	r.Run(":8080")
+	r.Run(fmt.Sprintf("127.0.0.1:%s", port))
 }
