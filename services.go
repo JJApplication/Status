@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os/exec"
+	"sync"
 	"time"
 )
 
@@ -69,17 +70,17 @@ func (h *HTTPChecker) CheckStatus() (ServiceStatus, error) {
 	client := &http.Client{
 		Timeout: h.Timeout,
 	}
-	
+
 	resp, err := client.Get(h.URL)
 	if err != nil {
 		return StatusOffline, fmt.Errorf("HTTP请求失败: %v", err)
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 		return StatusOnline, nil
 	}
-	
+
 	return StatusOffline, fmt.Errorf("HTTP状态码异常: %d", resp.StatusCode)
 }
 
@@ -112,24 +113,24 @@ func (c *CmdChecker) CheckStatus() (ServiceStatus, error) {
 	if c.ProcessName == "" {
 		return StatusOffline, fmt.Errorf("进程名称不能为空")
 	}
-	
+
 	// 设置默认超时时间
 	timeout := c.Timeout
 	if timeout == 0 {
 		timeout = 5 * time.Second
 	}
-	
+
 	// 构建命令：ps ax | grep 进程名 | grep -v grep
 	cmdStr := fmt.Sprintf("ps ax | grep '%s' | grep -v grep", c.ProcessName)
 	cmd := exec.Command("bash", "-c", cmdStr)
-	
+
 	// 设置超时
 	done := make(chan error, 1)
 	go func() {
 		_, err := cmd.Output()
 		done <- err
 	}()
-	
+
 	select {
 	case err := <-done:
 		if err != nil {
@@ -147,6 +148,8 @@ func (c *CmdChecker) CheckStatus() (ServiceStatus, error) {
 
 // ServiceManager 服务管理器
 type ServiceManager struct {
+	lock        *sync.RWMutex
+	refreshFlag bool
 	// services 服务列表
 	services []*Service
 }
@@ -182,7 +185,14 @@ func (sm *ServiceManager) UpdateStatus(service *Service) {
 
 // UpdateAllStatus 更新所有服务状态
 func (sm *ServiceManager) UpdateAllStatus() {
+	sm.lock.Lock()
+	defer sm.lock.Unlock()
+	if sm.refreshFlag {
+		return
+	}
+	sm.refreshFlag = true
 	for _, service := range sm.services {
 		sm.UpdateStatus(service)
 	}
+	sm.refreshFlag = false
 }

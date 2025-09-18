@@ -116,7 +116,7 @@ func indexHandler(c *gin.Context) {
 // apiStatusHandler API状态接口
 func apiStatusHandler(c *gin.Context) {
 	// 更新服务状态
-	serviceManager.UpdateAllStatus()
+	go serviceManager.UpdateAllStatus()
 
 	// 返回JSON格式的服务状态
 	c.JSON(http.StatusOK, gin.H{
