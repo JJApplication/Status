@@ -41,7 +41,7 @@ func initServices() {
 	})
 
 	serviceManager.AddService(&Service{
-		Name:        "Sanwich Proxy",
+		Name:        "Sandwich Proxy",
 		Description: " Sandwich 网关代理服务",
 		URL:         "",
 		Status:      StatusOnline,
